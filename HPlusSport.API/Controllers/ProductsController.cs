@@ -1,6 +1,7 @@
 ﻿using HPlusSport.API.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace HPlusSport.API.Controllers
 {
@@ -18,9 +19,25 @@ namespace HPlusSport.API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult> GetAllProducts()
+        public async Task<ActionResult> GetAllProducts([FromQuery]ProductQueryParameters queryParameters)
         {
-            return Ok(await _context.Products.ToArrayAsync());
+            IQueryable<Product> products = _context.Products;
+
+            if (queryParameters.MinPrice != null)
+            {
+                products = products.Where(x => x.Price >= queryParameters.MinPrice);
+            }
+
+            if (queryParameters.MaxPrice != null)
+            {
+                products = products.Where(x => x.Price <= queryParameters.MaxPrice);
+            }                
+
+            products = products
+                .Skip(queryParameters.Size * (queryParameters.Page - 1))
+                .Take(queryParameters.Size);
+
+            return Ok(await products.ToArrayAsync());
         }
 
         [HttpGet("{id}")]
